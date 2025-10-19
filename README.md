@@ -59,3 +59,35 @@ classDiagram
     BookingFacade --> BookingRepository
     Booking o-- BookingRequest
     BookingRequest --> RoomType
+
+
+
+sequenceDiagram
+    participant Client as App
+    participant Facade as BookingFacade
+    participant Inv as RoomInventory
+    participant Price as PricingEngine
+    participant Pay as PaymentGateway
+    participant Repo as BookingRepository
+    participant Clean as CleaningScheduler
+    participant Notify as NotificationService
+
+    Client->>Facade: bookStay(req, card)
+    Facade->>Inv: isAvailable(req.roomType)?
+    Inv-->>Facade: true/false
+
+    alt unavailable
+        Note over Facade: throws IllegalStateException
+    else available
+        Facade->>Price: calculate(req)
+        Price-->>Facade: total
+        Facade->>Pay: charge(card, total)
+        Pay-->>Facade: paymentId
+        Facade->>Inv: reserve(req.roomType)
+        Facade->>Repo: save(booking)
+        Facade->>Clean: schedule(req.checkOut, req.roomType)
+        Facade->>Notify: sendBookingConfirmation(booking)
+        Facade-->>Client: booking
+    end
+
+
